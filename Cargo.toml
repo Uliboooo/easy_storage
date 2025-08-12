@@ -1,0 +1,13 @@
+[package]
+name = "easy_storage"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+json = ["serde_json"]
+toml = ["toml"]
+
+[dependencies]
+serde = {version = "1.0.219", features = ["derive"]}
+toml = {version = "0.9.5", optional = true}
+serde_json = {version = "1.0.142", optional = true}
