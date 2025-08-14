@@ -2,10 +2,9 @@
 name = "easy_storage"
 version = "0.1.0"
 edition = "2024"
-
-# [features]
-# json_parse = ["dep:serde_json"]
-# toml_parse = ["dep:toml"]
+authers = [ "Uliboooo", "uliboulibo@gmail.com"]
+description = "provide a features to easy save and load struct"
+license = "MIT or Apache-2.0"
 
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"] }
