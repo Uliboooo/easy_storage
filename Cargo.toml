@@ -1,9 +1,9 @@
 [package]
 name = "easy_storage"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
-authers = [ "Uliboooo", "uliboulibo@gmail.com"]
-description = "provide a features to easy save and load struct"
+authors = [ "Uliboooo <uliboulibo@gmail.com>"]
+description = "Provides a trait to easily save and load structs in JSON or TOML format."
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Uliboooo/easy_storage"
 

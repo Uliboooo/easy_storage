@@ -10,7 +10,7 @@
 //!     email: String,
 //! }
 //!
-//! impl<P: AsRef<std::path::Path>> Storeable<P> for User {}
+//! impl Storeable for User {}
 //!
 //! fn main() {
 //!     let user = User {
@@ -89,7 +89,7 @@ pub enum Format {
     Toml,
 }
 
-pub trait Storeable<P: AsRef<Path>> {
+pub trait Storeable: Serialize + DeserializeOwned + Sized {
     /// Save to file.
     ///
     /// # Arguments
@@ -99,7 +99,7 @@ pub trait Storeable<P: AsRef<Path>> {
     ///
     /// # Returns
     /// * `Result<(), Error>` - A `Result` enum that indicates whether the operation was successful.
-    fn save(&self, path: P, new_create: bool, format: Format) -> Result<(), Error>
+    fn save<P: AsRef<Path>>(&self, path: P, new_create: bool, format: Format) -> Result<(), Error>
     where
         Self: Serialize + DeserializeOwned,
     {
@@ -128,7 +128,7 @@ pub trait Storeable<P: AsRef<Path>> {
     ///
     /// # Returns
     /// * `Result<(), Error>` - return errors if path does not include extension or include a not-supported exttension or others reasons(io, fs, json(toml) parse).
-    fn save_by_extension(&self, path: P, new_create: bool) -> Result<(), Error>
+    fn save_by_extension<P: AsRef<Path>>(&self, path: P, new_create: bool) -> Result<(), Error>
     where
         Self: Serialize + DeserializeOwned,
     {
@@ -151,7 +151,7 @@ pub trait Storeable<P: AsRef<Path>> {
     ///
     /// # Returns
     /// * `Result<Self, Error>` - A `Result` enum that indicates whether the operation was successful.
-    fn load(path: P, format: Format) -> Result<Self, Error>
+    fn load<P: AsRef<Path>>(path: P, format: Format) -> Result<Self, Error>
     where
         Self: Serialize + DeserializeOwned,
     {
@@ -173,7 +173,7 @@ pub trait Storeable<P: AsRef<Path>> {
     ///
     /// # Returns
     /// * `Result<(), Error>` - return errors if path does not include extension or include a not-supported exttension or others reasons(io, fs, json(toml) parse).
-    fn load_by_extension(path: P) -> Result<Self, Error>
+    fn load_by_extension<P: AsRef<Path>>(path: P) -> Result<Self, Error>
     where
         Self: Serialize + DeserializeOwned,
     {
@@ -201,7 +201,7 @@ mod tests {
         email: String,
     }
 
-    impl<P: AsRef<std::path::Path>> Storeable<P> for User {}
+    impl Storeable for User {}
 
     fn ready_test_env() -> PathBuf {
         let test_path = std::env::current_dir().unwrap().join("test");
