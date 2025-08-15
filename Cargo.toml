@@ -1,6 +1,6 @@
 [package]
 name = "easy_storage"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 authors = [ "Uliboooo <uliboulibo@gmail.com>"]
 description = "Provides a trait to easily save and load structs in JSON or TOML format."
@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/Uliboooo/easy_storage"
 
 [dependencies]
-serde = { version = "1.0.219", features = ["derive"] }
-toml = { version = "0.9.5"}
-serde_json = { version = "1.0.142"}
+serde = { version = "1.0.*", features = ["derive"] }
+toml = { version = "0.9.*"}
+serde_json = { version = "1.0.*"}
 

@@ -153,15 +153,6 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
     {
         let format = path_to_format(&path)?;
         self.save(path, true, format)
-        // if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
-        //     match v {
-        //         "json" => self.save(path, new_create, Format::Json),
-        //         "toml" => self.save(path, new_create, Format::Toml),
-        //         _ => Err(Error::ExtensionDoesNotExist),
-        //     }
-        // } else {
-        //     Err(Error::ExtensionDoesNotExist)
-        // }
     }
 
     /// Load from file.
@@ -200,15 +191,6 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
     {
         let format = path_to_format(&path)?;
         Self::load(path, format)
-        // if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
-        //     match v {
-        //         "json" => Self::load(path, Format::Json),
-        //         "toml" => Self::load(path, Format::Toml),
-        //         _ => Err(Error::ExtensionDoesNotExist),
-        //     }
-        // } else {
-        //     Err(Error::ExtensionDoesNotExist)
-        // }
     }
 }
 
