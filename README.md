@@ -11,6 +11,8 @@ Add the following to your `Cargo.toml` file:
 easy_storage = "0.2.*"
 ```
 
+https://crates.io/crates/easy_storage
+
 ## Example
 
 ```rust
