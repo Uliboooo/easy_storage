@@ -8,7 +8,7 @@ Add the following to your `Cargo.toml` file:
 
 ```toml: Cargo.toml
 [dependencies]
-easy_storage = "0.2.*"
+easy_storage = "0.3.*"
 ```
 
 https://crates.io/crates/easy_storage
