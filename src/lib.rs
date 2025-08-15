@@ -42,6 +42,12 @@ pub enum Error {
     ExtensionDoesNotExist,
 }
 
+impl From<std::io::Error> for Error {
+    fn from(value: std::io::Error) -> Self {
+        Self::IoE(value)
+    }
+}
+
 impl From<serde_json::Error> for Error {
     fn from(value: serde_json::Error) -> Self {
         Self::JsonE(value)
@@ -89,6 +95,18 @@ pub enum Format {
     Toml,
 }
 
+fn path_to_format<P: AsRef<Path>>(path: P) -> Result<Format, Error> {
+    if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
+        match v {
+            "json" => Ok(Format::Json),
+            "toml" => Ok(Format::Toml),
+            _ => Err(Error::ExtensionDoesNotExist),
+        }
+    } else {
+        Err(Error::ExtensionDoesNotExist)
+    }
+}
+
 pub trait Storeable: Serialize + DeserializeOwned + Sized {
     /// Save to file.
     ///
@@ -104,18 +122,19 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
         Self: Serialize + DeserializeOwned,
     {
         let s = match format {
-            Format::Json => serde_json::to_string_pretty(self).map_err(Error::JsonE),
-            Format::Toml => toml::to_string_pretty(self).map_err(Error::ParTomlE),
-        }?;
+            Format::Json => serde_json::to_string_pretty(self)?,
+            Format::Toml => toml::to_string_pretty(self)?,
+        };
         // let s = toml::to_string_pretty(self).map_err(Error::ParTomlE)?;
         let mut f = OpenOptions::new()
             .write(true)
             .truncate(true)
             .create(new_create)
-            .open(path)
-            .map_err(Error::IoE)?;
+            .open(path)?;
+        // .map_err(Error::IoE)?;
 
-        f.write_all(s.as_bytes()).map_err(Error::IoE)
+        f.write_all(s.as_bytes())?;
+        Ok(())
     }
 
     /// save to file by extension of `path`
@@ -132,15 +151,17 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
     where
         Self: Serialize + DeserializeOwned,
     {
-        if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
-            match v {
-                "json" => self.save(path, new_create, Format::Json),
-                "toml" => self.save(path, new_create, Format::Toml),
-                _ => Err(Error::ExtensionDoesNotExist),
-            }
-        } else {
-            Err(Error::ExtensionDoesNotExist)
-        }
+        let format = path_to_format(&path)?;
+        self.save(path, true, format)
+        // if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
+        //     match v {
+        //         "json" => self.save(path, new_create, Format::Json),
+        //         "toml" => self.save(path, new_create, Format::Toml),
+        //         _ => Err(Error::ExtensionDoesNotExist),
+        //     }
+        // } else {
+        //     Err(Error::ExtensionDoesNotExist)
+        // }
     }
 
     /// Load from file.
@@ -155,12 +176,12 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
     where
         Self: Serialize + DeserializeOwned,
     {
-        let content = std::fs::read_to_string(path).map_err(Error::IoE)?;
+        let content = std::fs::read_to_string(path)?;
         // return deserialized date
-        match format {
-            Format::Json => serde_json::from_str::<Self>(&content).map_err(Error::JsonE),
-            Format::Toml => toml::from_str::<Self>(&content).map_err(Error::DesTomlE),
-        }
+        Ok(match format {
+            Format::Json => serde_json::from_str::<Self>(&content)?,
+            Format::Toml => toml::from_str::<Self>(&content)?,
+        })
     }
 
     /// load to file by extension of `path`
@@ -177,15 +198,17 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
     where
         Self: Serialize + DeserializeOwned,
     {
-        if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
-            match v {
-                "json" => Self::load(path, Format::Json),
-                "toml" => Self::load(path, Format::Toml),
-                _ => Err(Error::ExtensionDoesNotExist),
-            }
-        } else {
-            Err(Error::ExtensionDoesNotExist)
-        }
+        let format = path_to_format(&path)?;
+        Self::load(path, format)
+        // if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
+        //     match v {
+        //         "json" => Self::load(path, Format::Json),
+        //         "toml" => Self::load(path, Format::Toml),
+        //         _ => Err(Error::ExtensionDoesNotExist),
+        //     }
+        // } else {
+        //     Err(Error::ExtensionDoesNotExist)
+        // }
     }
 }
 
@@ -195,7 +218,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use std::path::PathBuf;
 
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
     struct User {
         name: String,
         email: String,
@@ -224,5 +247,23 @@ mod tests {
             eprintln!("{e}");
         }
         assert!(res.is_ok());
+    }
+
+    #[test]
+    fn load_test() {
+        let test_f_path = ready_test_env();
+        let save_path = test_f_path.join("user.toml");
+        let user = User {
+            name: "Alice".to_string(),
+            email: "alice@alice.com".to_string(),
+        };
+
+        user.save_by_extension(&save_path, true).unwrap();
+
+        let loaded = User::load_by_extension(save_path);
+        match loaded {
+            Ok(v) => assert_eq!(v, user),
+            Err(_) => assert!(loaded.is_ok()),
+        }
     }
 }
