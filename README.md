@@ -8,44 +8,37 @@ Add the following to your `Cargo.toml` file:
 
 ```toml: Cargo.toml
 [dependencies]
-easy_storage = "0.1.*"
+easy_storage = "0.2.*"
 ```
 
-## Example Usage
+## Example
 
 ```rust
-use serde::{Serialize, Deserialize};
-use storeable::{Storeable, Format, Error};
-use std::path::Path;
+use serde::{Deserialize, Serialize};
+use easy_storage::Storeable;
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
-struct MyData {
+#[derive(Debug, Serialize, Deserialize)]
+struct User {
     name: String,
-    value: i32,
+    email: String,
 }
 
-impl Storeable<Path> for MyData {}
+impl<P: AsRef<std::path::Path>> Storeable<P> for User {}
 
-fn main() -> Result<(), Error> {
-    let data = MyData {
-        name: "Example".to_string(),
-        value: 42,
+fn main() {
+    let user = User {
+        name: "Alice".to_string(),
+        email: "alice@alice.com".to_string(),
     };
+    let save_path = std::env::current_dir().unwrap().join("test").join("user.toml");
+    match user.save_by_extension(&save_path, true) {
+        Ok(_) => println!("success."),
+        Err(e) => println!("Error: {e}"),
+    }
 
-    let path = Path::new("data.json");
-
-    // Save to file
-    data.save(path, true, Format::Json)?; // Creates a new file if it doesn't exist
-
-    // Load from file
-    let loaded_data = MyData::load(path, Format::Json)?;
-
-    assert_eq!(data, loaded_data);
-    println!("Loaded data: {:?}", loaded_data);
-
-    // Clean up the file (optional)
-    std::fs::remove_file(path).unwrap();
-
-    Ok(())
+    match User::load_by_extension(save_path) {
+        Ok(s) => println!("{s:?}"),
+        Err(e) => println!("Error: {e}"),
+    }
 }
 ```
