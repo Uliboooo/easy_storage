@@ -8,7 +8,7 @@ Add the following to your `Cargo.toml` file:
 
 ```toml: Cargo.toml
 [dependencies]
-easy_storage = "0.1.0"
+easy_storage = "0.1.*"
 ```
 
 ## Example Usage
