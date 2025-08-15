@@ -117,10 +117,7 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
     ///
     /// # Returns
     /// * `Result<(), Error>` - A `Result` enum that indicates whether the operation was successful.
-    fn save<P: AsRef<Path>>(&self, path: P, new_create: bool, format: Format) -> Result<(), Error>
-    where
-        Self: Serialize + DeserializeOwned,
-    {
+    fn save<P: AsRef<Path>>(&self, path: P, new_create: bool, format: Format) -> Result<(), Error> {
         let s = match format {
             Format::Json => serde_json::to_string_pretty(self)?,
             Format::Toml => toml::to_string_pretty(self)?,
@@ -143,16 +140,13 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
     ///
     /// # Arguments
     /// * `path` - path to the file.
-    /// * `new_create` - a boolean that indicates wheter to create a new if it does not exist.
+    /// * `new_create` - a boolean that indicates whether to create a new if it does not exist.
     ///
     /// # Returns
-    /// * `Result<(), Error>` - return errors if path does not include extension or include a not-supported exttension or others reasons(io, fs, json(toml) parse).
-    fn save_by_extension<P: AsRef<Path>>(&self, path: P, new_create: bool) -> Result<(), Error>
-    where
-        Self: Serialize + DeserializeOwned,
-    {
+    /// * `Result<(), Error>` - return errors if path does not include extension or include a not-supported extension or others reasons(io, fs, json(toml) parse).
+    fn save_by_extension<P: AsRef<Path>>(&self, path: P, new_create: bool) -> Result<(), Error> {
         let format = path_to_format(&path)?;
-        self.save(path, true, format)
+        self.save(path, new_create, format)
     }
 
     /// Load from file.
@@ -163,10 +157,7 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
     ///
     /// # Returns
     /// * `Result<Self, Error>` - A `Result` enum that indicates whether the operation was successful.
-    fn load<P: AsRef<Path>>(path: P, format: Format) -> Result<Self, Error>
-    where
-        Self: Serialize + DeserializeOwned,
-    {
+    fn load<P: AsRef<Path>>(path: P, format: Format) -> Result<Self, Error> {
         let content = std::fs::read_to_string(path)?;
         // return deserialized date
         Ok(match format {
@@ -175,7 +166,7 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
         })
     }
 
-    /// load to file by extension of `path`
+    /// load from file by extension of `path`
     ///
     /// supported extensions are `json` and `toml`
     ///
@@ -185,10 +176,7 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
     ///
     /// # Returns
     /// * `Result<(), Error>` - return errors if path does not include extension or include a not-supported exttension or others reasons(io, fs, json(toml) parse).
-    fn load_by_extension<P: AsRef<Path>>(path: P) -> Result<Self, Error>
-    where
-        Self: Serialize + DeserializeOwned,
-    {
+    fn load_by_extension<P: AsRef<Path>>(path: P) -> Result<Self, Error> {
         let format = path_to_format(&path)?;
         Self::load(path, format)
     }

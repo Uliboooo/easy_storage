@@ -1,6 +1,6 @@
 [package]
 name = "easy_storage"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2024"
 authors = [ "Uliboooo <uliboulibo@gmail.com>"]
 description = "Provides a trait to easily save and load structs in JSON or TOML format."

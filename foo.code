@@ -1,21 +1,3 @@
-# Storeable Crate
-
-A Rust crate that provides a trait for easily saving and loading data structures to and from files in either JSON or TOML format.
-
-## Installation
-
-Add the following to your `Cargo.toml` file:
-
-```toml: Cargo.toml
-[dependencies]
-easy_storage = "0.3.*"
-```
-
-https://crates.io/crates/easy_storage
-
-## Example
-
-```rust
 use serde::{Deserialize, Serialize};
 use easy_storage::Storeable;
 
@@ -43,4 +25,3 @@ fn main() {
         Err(e) => println!("Error: {e}"),
     }
 }
-```
