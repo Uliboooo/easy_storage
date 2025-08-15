@@ -1,3 +1,35 @@
+//! # Examples
+//!
+//! ```
+//! use serde::{Deserialize, Serialize};
+//! use easy_storage::Storeable;
+//!
+//! #[derive(Debug, Serialize, Deserialize)]
+//! struct User {
+//!     name: String,
+//!     email: String,
+//! }
+//!
+//! impl<P: AsRef<std::path::Path>> Storeable<P> for User {}
+//!
+//! fn main() {
+//!     let user = User {
+//!         name: "Alice".to_string(),
+//!         email: "alice@alice.com".to_string(),
+//!     };
+//!     let save_path = std::env::current_dir().unwrap().join("test").join("user.toml");
+//!     match user.save_by_extension(&save_path, true) {
+//!         Ok(_) => println!("success."),
+//!         Err(e) => println!("Error: {e}"),
+//!     }
+//!
+//!     match User::load_by_extension(save_path) {
+//!         Ok(s) => println!("{s:?}"),
+//!         Err(e) => println!("Error: {e}"),
+//!     }
+//! }
+//! ```
+
 use serde::{Serialize, de::DeserializeOwned};
 use std::{fmt::Display, fs::OpenOptions, io::Write, path::Path};
 
@@ -7,6 +39,7 @@ pub enum Error {
     JsonE(serde_json::Error),
     ParTomlE(toml::ser::Error),
     DesTomlE(toml::de::Error),
+    ExtensionDoesNotExist,
 }
 
 impl From<serde_json::Error> for Error {
@@ -34,6 +67,7 @@ impl Display for Error {
             Error::JsonE(e) => write!(f, "{e}"),
             Error::ParTomlE(e) => write!(f, "{e}"),
             Error::DesTomlE(e) => write!(f, "{e}"),
+            Error::ExtensionDoesNotExist => write!(f, "extension does not exist."),
         }
     }
 }
@@ -45,6 +79,7 @@ impl std::error::Error for Error {
             Error::JsonE(e) => Some(e),
             Error::ParTomlE(e) => Some(e),
             Error::DesTomlE(e) => Some(e),
+            Error::ExtensionDoesNotExist => None,
         }
     }
 }
@@ -83,6 +118,31 @@ pub trait Storeable<P: AsRef<Path>> {
         f.write_all(s.as_bytes()).map_err(Error::IoE)
     }
 
+    /// save to file by extension of `path`
+    ///
+    /// supported extensions are `json` and `toml`.
+    ///
+    /// # Arguments
+    /// * `path` - path to the file.
+    /// * `new_create` - a boolean that indicates wheter to create a new if it does not exist.
+    ///
+    /// # Returns
+    /// * `Result<(), Error>` - return errors if path does not include extension or include a not-supported exttension or others reasons(io, fs, json(toml) parse).
+    fn save_by_extension(&self, path: P, new_create: bool) -> Result<(), Error>
+    where
+        Self: Serialize + DeserializeOwned,
+    {
+        if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
+            match v {
+                "json" => self.save(path, new_create, Format::Json),
+                "toml" => self.save(path, new_create, Format::Toml),
+                _ => Err(Error::ExtensionDoesNotExist),
+            }
+        } else {
+            Err(Error::ExtensionDoesNotExist)
+        }
+    }
+
     /// Load from file.
     ///
     /// # Arguments
@@ -101,5 +161,68 @@ pub trait Storeable<P: AsRef<Path>> {
             Format::Json => serde_json::from_str::<Self>(&content).map_err(Error::JsonE),
             Format::Toml => toml::from_str::<Self>(&content).map_err(Error::DesTomlE),
         }
+    }
+
+    /// load to file by extension of `path`
+    ///
+    /// supported extensions are `json` and `toml`
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - path to load file.
+    ///
+    /// # Returns
+    /// * `Result<(), Error>` - return errors if path does not include extension or include a not-supported exttension or others reasons(io, fs, json(toml) parse).
+    fn load_by_extension(path: P) -> Result<Self, Error>
+    where
+        Self: Serialize + DeserializeOwned,
+    {
+        if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
+            match v {
+                "json" => Self::load(path, Format::Json),
+                "toml" => Self::load(path, Format::Toml),
+                _ => Err(Error::ExtensionDoesNotExist),
+            }
+        } else {
+            Err(Error::ExtensionDoesNotExist)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Storeable;
+    use serde::{Deserialize, Serialize};
+    use std::path::PathBuf;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct User {
+        name: String,
+        email: String,
+    }
+
+    impl<P: AsRef<std::path::Path>> Storeable<P> for User {}
+
+    fn ready_test_env() -> PathBuf {
+        let test_path = std::env::current_dir().unwrap().join("test");
+        if !test_path.exists() {
+            std::fs::create_dir_all(&test_path).unwrap();
+        }
+        test_path
+    }
+
+    #[test]
+    fn save_test() {
+        let test_f_path = ready_test_env();
+        let save_path = test_f_path.join("user.toml");
+        let user = User {
+            name: "Alice".to_string(),
+            email: "alice@alice.com".to_string(),
+        };
+        let res = user.save_by_extension(save_path, true);
+        if let Err(e) = &res {
+            eprintln!("{e}");
+        }
+        assert!(res.is_ok());
     }
 }
