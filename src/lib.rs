@@ -12,82 +12,38 @@
 //!
 //! impl Storeable for User {}
 //!
-//! fn main() {
-//!     let user = User {
-//!         name: "Alice".to_string(),
-//!         email: "alice@alice.com".to_string(),
-//!     };
-//!     let save_path = std::env::current_dir().unwrap().join("test").join("user.toml");
-//!     match user.save_by_extension(&save_path, true) {
-//!         Ok(_) => println!("success."),
-//!         Err(e) => println!("Error: {e}"),
-//!     }
-//!
-//!     match User::load_by_extension(save_path) {
-//!         Ok(s) => println!("{s:?}"),
-//!         Err(e) => println!("Error: {e}"),
-//!     }
+//! let user = User {
+//!     name: "Alice".to_string(),
+//!     email: "alice@alice.com".to_string(),
+//! };
+//! let save_path = std::env::current_dir().unwrap().join("test").join("user.toml");
+//! match user.save_by_extension(&save_path, true) {
+//!     Ok(_) => println!("success."),
+//!     Err(e) => println!("Error: {e}"),
 //! }
-//! ```
+
+//! match User::load_by_extension(save_path) {
+//!     Ok(s) => println!("{s:?}"),
+//!     Err(e) => println!("Error: {e}"),
+//!     }
+//! //! ```
 
 use serde::{Serialize, de::DeserializeOwned};
-use std::{fmt::Display, fs::OpenOptions, io::Write, path::Path};
+use std::{fs::OpenOptions, io::Write, path::Path};
+use thiserror::Error;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum Error {
-    IoE(std::io::Error),
-    JsonE(serde_json::Error),
-    ParTomlE(toml::ser::Error),
-    DesTomlE(toml::de::Error),
+    #[error("IO error: {0}")]
+    IoE(#[from] std::io::Error),
+    #[error("serde error: {0}")]
+    JsonE(#[from] serde_json::Error),
+    #[error("parse toml error: {0}")]
+    ParTomlE(#[from] toml::ser::Error),
+    #[error("parse toml error: {0}")]
+    DesTomlE(#[from] toml::de::Error),
+    #[error("extension does not exist.")]
     ExtensionDoesNotExist,
-}
-
-impl From<std::io::Error> for Error {
-    fn from(value: std::io::Error) -> Self {
-        Self::IoE(value)
-    }
-}
-
-impl From<serde_json::Error> for Error {
-    fn from(value: serde_json::Error) -> Self {
-        Self::JsonE(value)
-    }
-}
-
-impl From<toml::ser::Error> for Error {
-    fn from(value: toml::ser::Error) -> Self {
-        Self::ParTomlE(value)
-    }
-}
-
-impl From<toml::de::Error> for Error {
-    fn from(value: toml::de::Error) -> Self {
-        Self::DesTomlE(value)
-    }
-}
-
-impl Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Error::IoE(e) => write!(f, "{e}"),
-            Error::JsonE(e) => write!(f, "{e}"),
-            Error::ParTomlE(e) => write!(f, "{e}"),
-            Error::DesTomlE(e) => write!(f, "{e}"),
-            Error::ExtensionDoesNotExist => write!(f, "extension does not exist."),
-        }
-    }
-}
-
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Error::IoE(e) => Some(e),
-            Error::JsonE(e) => Some(e),
-            Error::ParTomlE(e) => Some(e),
-            Error::DesTomlE(e) => Some(e),
-            Error::ExtensionDoesNotExist => None,
-        }
-    }
 }
 
 pub enum Format {
@@ -96,7 +52,7 @@ pub enum Format {
 }
 
 fn path_to_format<P: AsRef<Path>>(path: P) -> Result<Format, Error> {
-    if let Some(v) = path.as_ref().extension().map(|f| f.to_str()).flatten() {
+    if let Some(v) = path.as_ref().extension().and_then(|f| f.to_str()) {
         match v {
             "json" => Ok(Format::Json),
             "toml" => Ok(Format::Toml),
