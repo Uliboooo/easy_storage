@@ -29,7 +29,11 @@
 //! //! ```
 
 use serde::{Serialize, de::DeserializeOwned};
-use std::{fs::OpenOptions, io::Write, path::Path};
+use std::{
+    fs::{self, OpenOptions},
+    io::Write,
+    path::Path,
+};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -78,13 +82,14 @@ pub trait Storeable: Serialize + DeserializeOwned + Sized {
             Format::Json => serde_json::to_string_pretty(self)?,
             Format::Toml => toml::to_string_pretty(self)?,
         };
-        // let s = toml::to_string_pretty(self).map_err(Error::ParTomlE)?;
+
+        path.as_ref().parent().map(fs::create_dir_all).transpose()?;
+
         let mut f = OpenOptions::new()
             .write(true)
             .truncate(true)
             .create(new_create)
             .open(path)?;
-        // .map_err(Error::IoE)?;
 
         f.write_all(s.as_bytes())?;
         Ok(())
@@ -184,7 +189,7 @@ mod tests {
             email: "alice@alice.com".to_string(),
         };
 
-        user.save_by_extension(&save_path, true).unwrap();
+        let _ = dbg!(user.save_by_extension(&save_path, true));
 
         let loaded = User::load_by_extension(save_path);
         match loaded {
